@@ -1,0 +1,834 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Titanic veri bilimi projesinin interaktif, tek sayfalık proje özeti.">
+  <meta name="theme-color" content="#081a20">
+  <title>Titanic — Veriden Tahmine</title>
+  <style>
+    :root {
+      --ink: #0c2026;
+      --deep: #07191f;
+      --deep-2: #0d282f;
+      --paper: #f1eee5;
+      --paper-2: #e7e1d5;
+      --white: #fffdf8;
+      --muted: #68777a;
+      --line: rgba(12, 32, 38, .15);
+      --sea: #42c7b8;
+      --sea-dark: #167d76;
+      --signal: #ff745c;
+      --gold: #d8ad62;
+      --shadow: 0 24px 60px rgba(5, 22, 28, .12);
+      --radius: 26px;
+      --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      --sans: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --display: Georgia, "Times New Roman", serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: var(--sans);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    button, input, select { font: inherit; }
+    button { color: inherit; }
+    a { color: inherit; text-decoration: none; }
+    ::selection { background: var(--signal); color: var(--deep); }
+
+    .shell { width: min(1180px, calc(100% - 40px)); margin-inline: auto; }
+    .skip-link {
+      position: fixed; top: 10px; left: 10px; z-index: 100;
+      padding: 10px 14px; background: var(--white); border-radius: 8px;
+      transform: translateY(-150%); transition: transform .2s;
+    }
+    .skip-link:focus { transform: translateY(0); }
+
+    .site-header {
+      position: fixed; inset: 0 0 auto; z-index: 50;
+      background: rgba(7, 25, 31, .9); color: var(--white);
+      border-bottom: 1px solid rgba(255,255,255,.1);
+      backdrop-filter: blur(16px);
+    }
+    .nav { height: 70px; display: flex; align-items: center; justify-content: space-between; gap: 28px; }
+    .brand { display: inline-flex; align-items: center; gap: 12px; font-weight: 780; letter-spacing: -.02em; }
+    .brand-mark {
+      width: 38px; height: 38px; display: grid; place-items: center;
+      border: 1px solid rgba(255,255,255,.3); border-radius: 50%;
+      color: var(--sea); font-family: var(--display); font-size: 21px;
+    }
+    .brand small { display: block; margin-top: 2px; color: #8eaaa9; font: 9px/1 var(--mono); letter-spacing: .13em; text-transform: uppercase; }
+    .nav-links { display: flex; align-items: center; gap: 28px; color: #bac9c8; font-size: 13px; }
+    .nav-links a { transition: color .2s; }
+    .nav-links a:hover, .nav-links a.active { color: var(--white); }
+    .nav-cta {
+      padding: 10px 15px; border: 1px solid rgba(255,255,255,.2);
+      border-radius: 999px; color: var(--white) !important;
+    }
+
+    .hero {
+      position: relative; min-height: 810px; padding: 154px 0 86px;
+      color: var(--white); background: var(--deep); overflow: hidden;
+    }
+    .hero::before {
+      content: ""; position: absolute; inset: 0;
+      background-image: linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+      background-size: 72px 72px; mask-image: linear-gradient(to bottom, #000, transparent 82%);
+    }
+    .hero::after {
+      content: ""; position: absolute; width: 660px; height: 660px; right: -380px; top: -230px;
+      border: 1px solid rgba(66,199,184,.35); border-radius: 50%; box-shadow: 0 0 0 90px rgba(66,199,184,.025), 0 0 0 180px rgba(66,199,184,.02);
+    }
+    .hero-grid { position: relative; z-index: 1; display: grid; grid-template-columns: 1.05fr .95fr; align-items: center; gap: 82px; }
+    .eyebrow {
+      display: flex; align-items: center; gap: 10px; margin: 0 0 24px;
+      color: var(--sea); font: 700 11px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase;
+    }
+    .eyebrow::before { content: ""; width: 32px; height: 1px; background: currentColor; }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 {
+      max-width: 700px; margin-bottom: 26px; font-family: var(--display);
+      font-size: clamp(54px, 7.1vw, 94px); font-weight: 400; line-height: .94; letter-spacing: -.055em;
+    }
+    h1 em { color: var(--sea); font-weight: 400; }
+    .hero-copy { max-width: 590px; color: #b4c2c1; font-size: 17px; line-height: 1.75; }
+    .hero-actions { display: flex; align-items: center; gap: 15px; margin-top: 34px; }
+    .button {
+      display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+      min-height: 50px; padding: 0 20px; border: 0; border-radius: 999px;
+      font-size: 13px; font-weight: 750; cursor: pointer; transition: transform .2s, background .2s, border-color .2s;
+    }
+    .button:hover { transform: translateY(-2px); }
+    .button-primary { background: var(--signal); color: var(--deep); }
+    .button-secondary { color: var(--white); border: 1px solid rgba(255,255,255,.22); background: transparent; }
+    .arrow { font-size: 17px; transition: transform .2s; }
+    .button:hover .arrow { transform: translateX(4px); }
+
+    .hero-visual { position: relative; min-height: 520px; display: grid; place-items: center; }
+    .radar {
+      position: relative; width: min(430px, 100%); aspect-ratio: 1;
+      display: grid; place-items: center; border: 1px solid rgba(255,255,255,.12); border-radius: 50%;
+    }
+    .radar::before, .radar::after { content: ""; position: absolute; border: 1px solid rgba(255,255,255,.08); border-radius: 50%; }
+    .radar::before { inset: 14%; }
+    .radar::after { inset: 30%; }
+    .radar-lines { position: absolute; inset: 0; }
+    .radar-lines::before, .radar-lines::after { content: ""; position: absolute; background: rgba(255,255,255,.08); }
+    .radar-lines::before { width: 100%; height: 1px; top: 50%; }
+    .radar-lines::after { height: 100%; width: 1px; left: 50%; }
+    .survival-ring {
+      position: relative; z-index: 2; width: 206px; height: 206px; border-radius: 50%;
+      display: grid; place-items: center; text-align: center;
+      background: conic-gradient(var(--sea) 0 38.4%, rgba(255,255,255,.08) 38.4% 100%);
+      box-shadow: 0 0 80px rgba(66,199,184,.13);
+    }
+    .survival-ring::before { content: ""; position: absolute; inset: 12px; border-radius: 50%; background: var(--deep); }
+    .ring-content { position: relative; z-index: 1; }
+    .ring-content strong { display: block; font: 400 51px/1 var(--display); letter-spacing: -.05em; }
+    .ring-content span { display: block; margin-top: 9px; color: #91a7a7; font: 10px/1.4 var(--mono); letter-spacing: .13em; text-transform: uppercase; }
+    .orbit-tag {
+      position: absolute; z-index: 4; padding: 12px 15px;
+      border: 1px solid rgba(255,255,255,.13); border-radius: 12px;
+      background: rgba(12,40,47,.9); box-shadow: 0 16px 35px rgba(0,0,0,.2);
+      color: #afc0bf; font: 10px/1.2 var(--mono); letter-spacing: .08em; text-transform: uppercase;
+    }
+    .orbit-tag strong { display: block; margin-bottom: 4px; color: var(--white); font: 700 18px/1 var(--sans); letter-spacing: -.02em; text-transform: none; }
+    .tag-one { top: 8%; right: -2%; }
+    .tag-two { bottom: 14%; left: -8%; }
+    .tag-three { right: -3%; bottom: 5%; }
+    .hero-foot {
+      position: relative; z-index: 2; display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 1px; margin-top: 62px; border-top: 1px solid rgba(255,255,255,.12);
+    }
+    .hero-stat { padding: 25px 20px 0 0; }
+    .hero-stat + .hero-stat { padding-left: 28px; border-left: 1px solid rgba(255,255,255,.12); }
+    .hero-stat strong { display: block; font: 400 27px/1 var(--display); }
+    .hero-stat span { display: block; margin-top: 7px; color: #788f90; font-size: 11px; }
+
+    main { overflow: hidden; }
+    section { padding: 112px 0; }
+    .section-head { display: grid; grid-template-columns: .8fr 1.2fr; gap: 70px; align-items: end; margin-bottom: 58px; }
+    .section-index { color: var(--signal); font: 700 11px/1 var(--mono); letter-spacing: .15em; text-transform: uppercase; }
+    .section-head h2 { margin: 13px 0 0; font: 400 clamp(40px, 5vw, 66px)/1 var(--display); letter-spacing: -.045em; }
+    .section-head p { max-width: 590px; margin: 0 0 4px auto; color: var(--muted); line-height: 1.75; }
+
+    .overview { position: relative; }
+    .overview-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 18px; }
+    .metric-card, .chart-panel, .insight-panel, .feature-card, .model-card, .matrix-card, .lab-panel {
+      border: 1px solid var(--line); border-radius: var(--radius); background: rgba(255,253,248,.66);
+    }
+    .metric-card { grid-column: span 3; min-height: 178px; padding: 25px; transition: transform .25s, box-shadow .25s; }
+    .metric-card:hover { transform: translateY(-5px); box-shadow: var(--shadow); }
+    .metric-icon { display: grid; place-items: center; width: 39px; height: 39px; border-radius: 50%; background: var(--deep); color: var(--sea); font: 700 12px/1 var(--mono); }
+    .metric-card strong { display: block; margin-top: 25px; font: 400 35px/1 var(--display); letter-spacing: -.03em; }
+    .metric-card span { display: block; margin-top: 7px; color: var(--muted); font-size: 12px; }
+
+    .explore { background: var(--white); }
+    .explore-layout { display: grid; grid-template-columns: 1.4fr .6fr; gap: 18px; }
+    .chart-panel { padding: 30px; background: var(--paper); }
+    .panel-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+    .panel-kicker { margin-bottom: 8px; color: var(--sea-dark); font: 700 10px/1 var(--mono); letter-spacing: .13em; text-transform: uppercase; }
+    .panel-title { margin: 0; font-size: 20px; letter-spacing: -.025em; }
+    .segmented { display: inline-flex; padding: 4px; border: 1px solid var(--line); border-radius: 999px; background: var(--paper-2); }
+    .segment {
+      min-height: 35px; padding: 0 14px; border: 0; border-radius: 999px;
+      background: transparent; color: var(--muted); font-size: 11px; font-weight: 750; cursor: pointer;
+    }
+    .segment.active { background: var(--deep); color: var(--white); }
+    .bars { display: grid; gap: 24px; margin-top: 48px; }
+    .bar-row { display: grid; grid-template-columns: 110px 1fr 68px; align-items: center; gap: 15px; }
+    .bar-label strong { display: block; font-size: 13px; }
+    .bar-label small { color: var(--muted); font: 10px/1.4 var(--mono); }
+    .bar-track { position: relative; height: 11px; border-radius: 999px; background: #d8d4ca; overflow: hidden; }
+    .bar-fill { height: 100%; width: 0; border-radius: inherit; background: var(--sea-dark); transition: width .7s cubic-bezier(.2,.8,.2,1); }
+    .bar-row:first-child .bar-fill { background: var(--signal); }
+    .bar-value { text-align: right; font: 400 22px/1 var(--display); }
+    .chart-note { margin: 40px 0 0 125px; padding-top: 19px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; line-height: 1.6; }
+    .insight-panel { position: relative; padding: 31px; background: var(--deep); color: var(--white); overflow: hidden; }
+    .insight-panel::after {
+      content: attr(data-number); position: absolute; right: -10px; bottom: -33px;
+      color: rgba(255,255,255,.045); font: 400 180px/1 var(--display);
+    }
+    .insight-label { color: var(--signal); font: 700 10px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; }
+    .insight-panel blockquote { margin: 35px 0 60px; font: 400 28px/1.2 var(--display); letter-spacing: -.03em; }
+    .insight-meta { position: absolute; left: 31px; bottom: 31px; color: #84999a; font: 10px/1.5 var(--mono); text-transform: uppercase; }
+
+    .missing-strip { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; margin-top: 18px; }
+    .missing-item { padding: 23px 26px; border: 1px solid var(--line); border-radius: 18px; background: var(--white); }
+    .missing-top { display: flex; justify-content: space-between; gap: 20px; font-size: 12px; }
+    .missing-top strong { font-family: var(--mono); }
+    .mini-track { height: 4px; margin-top: 14px; background: var(--paper-2); overflow: hidden; border-radius: 10px; }
+    .mini-fill { height: 100%; background: var(--signal); border-radius: inherit; }
+
+    .process { background: var(--paper-2); }
+    .process-grid { display: grid; grid-template-columns: .82fr 1.18fr; gap: 18px; align-items: stretch; }
+    .process-nav { display: grid; gap: 10px; }
+    .process-step {
+      position: relative; display: grid; grid-template-columns: 54px 1fr 25px; align-items: center; gap: 13px;
+      padding: 18px; border: 1px solid var(--line); border-radius: 18px; background: transparent;
+      text-align: left; cursor: pointer; transition: background .2s, border-color .2s, transform .2s;
+    }
+    .process-step:hover { transform: translateX(4px); }
+    .process-step.active { background: var(--white); border-color: transparent; box-shadow: 0 12px 30px rgba(7,25,31,.07); }
+    .step-no { display: grid; place-items: center; width: 45px; height: 45px; border-radius: 50%; background: var(--deep); color: var(--white); font: 11px/1 var(--mono); }
+    .process-step.active .step-no { background: var(--signal); color: var(--deep); }
+    .step-copy strong { display: block; font-size: 14px; }
+    .step-copy small { color: var(--muted); font-size: 11px; }
+    .step-arrow { color: var(--muted); }
+    .process-detail { min-height: 440px; padding: 42px; border-radius: var(--radius); background: var(--deep); color: var(--white); }
+    .detail-count { color: var(--sea); font: 700 11px/1 var(--mono); letter-spacing: .12em; }
+    .process-detail h3 { max-width: 560px; margin: 27px 0 18px; font: 400 38px/1.08 var(--display); letter-spacing: -.035em; }
+    .process-detail > p { max-width: 590px; color: #9fb0b0; line-height: 1.7; }
+    .detail-code { margin-top: 35px; padding: 22px; border: 1px solid rgba(255,255,255,.11); border-radius: 14px; background: rgba(255,255,255,.04); overflow-x: auto; }
+    .detail-code code { color: #cee0dd; font: 12px/1.7 var(--mono); white-space: pre; }
+    .detail-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 25px; }
+    .detail-tag { padding: 8px 11px; border: 1px solid rgba(255,255,255,.12); border-radius: 999px; color: #afbfbe; font-size: 10px; }
+
+    .features { background: var(--deep); color: var(--white); }
+    .features .section-head p { color: #91a3a4; }
+    .feature-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 18px; }
+    .feature-card { position: relative; grid-column: span 4; min-height: 250px; padding: 28px; background: var(--deep-2); border-color: rgba(255,255,255,.1); overflow: hidden; }
+    .feature-card:nth-child(4), .feature-card:nth-child(5) { grid-column: span 6; }
+    .feature-no { color: var(--sea); font: 700 10px/1 var(--mono); }
+    .feature-card h3 { margin: 42px 0 12px; font: 400 27px/1 var(--display); }
+    .feature-card p { max-width: 360px; color: #94a6a7; font-size: 13px; line-height: 1.65; }
+    .formula { display: inline-block; margin-top: 10px; color: var(--signal); font: 11px/1.4 var(--mono); }
+    .feature-glyph { position: absolute; right: 23px; top: 17px; color: rgba(255,255,255,.05); font: 400 83px/1 var(--display); }
+
+    .models { background: var(--white); }
+    .model-layout { display: grid; grid-template-columns: 1.25fr .75fr; gap: 18px; }
+    .model-card { padding: 31px; background: var(--paper); }
+    .legend { display: flex; gap: 18px; color: var(--muted); font-size: 10px; }
+    .legend span { display: flex; align-items: center; gap: 6px; }
+    .legend i { width: 8px; height: 8px; border-radius: 50%; background: var(--sea-dark); }
+    .legend span:last-child i { background: var(--signal); }
+    .model-bars { display: grid; gap: 30px; margin-top: 43px; }
+    .model-row { display: grid; grid-template-columns: 140px 1fr; gap: 17px; }
+    .model-name strong { display: block; font-size: 12px; }
+    .model-name small { color: var(--muted); font: 9px/1.5 var(--mono); }
+    .dual-bars { display: grid; gap: 6px; }
+    .thin-bar { position: relative; height: 9px; border-radius: 10px; background: #d9d5cb; overflow: visible; }
+    .thin-bar span { display: block; height: 100%; border-radius: inherit; background: var(--sea-dark); }
+    .thin-bar.train span { background: var(--signal); opacity: .85; }
+    .thin-bar b { position: absolute; left: calc(var(--value) * 1%); top: -3px; transform: translateX(9px); font: 9px/1 var(--mono); }
+    .winner { color: var(--sea-dark); }
+    .model-summary { margin-top: 38px; padding: 19px 21px; border-left: 3px solid var(--sea-dark); background: rgba(22,125,118,.07); font-size: 12px; line-height: 1.7; }
+
+    .matrix-card { padding: 31px; background: var(--deep); color: var(--white); }
+    .matrix-head { display: flex; justify-content: space-between; gap: 18px; align-items: start; }
+    .score-chip { padding: 8px 10px; border-radius: 999px; background: rgba(66,199,184,.12); color: var(--sea); font: 700 10px/1 var(--mono); }
+    .matrix { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; margin-top: 30px; }
+    .matrix-cell { min-height: 91px; display: grid; place-items: center; border-radius: 13px; background: rgba(255,255,255,.06); text-align: center; }
+    .matrix-cell.good { background: rgba(66,199,184,.17); }
+    .matrix-cell.bad { background: rgba(255,116,92,.1); }
+    .matrix-cell strong { display: block; font: 400 30px/1 var(--display); }
+    .matrix-cell small { display: block; margin-top: 6px; color: #8ea4a4; font: 9px/1 var(--mono); }
+    .matrix-axis { margin-top: 16px; color: #819797; text-align: center; font: 9px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+    .score-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 24px; }
+    .score-grid div { padding-top: 15px; border-top: 1px solid rgba(255,255,255,.1); }
+    .score-grid strong { display: block; font: 400 21px/1 var(--display); }
+    .score-grid span { color: #7f9697; font-size: 9px; }
+
+    .lab { position: relative; background: var(--paper-2); }
+    .lab::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 1px; background: var(--line); }
+    .lab-panel { display: grid; grid-template-columns: 1.15fr .85fr; overflow: hidden; background: var(--white); box-shadow: var(--shadow); }
+    .lab-form { padding: 40px; }
+    .presets { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 31px; }
+    .preset { padding: 8px 12px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--muted); font-size: 10px; cursor: pointer; }
+    .preset:hover { color: var(--ink); border-color: var(--ink); }
+    .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+    .field { display: grid; gap: 8px; }
+    .field label { color: var(--muted); font: 700 10px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+    .field input:not([type="checkbox"]), .field select {
+      width: 100%; height: 48px; padding: 0 14px; border: 1px solid var(--line); border-radius: 11px;
+      outline: none; background: var(--paper); transition: border-color .2s, box-shadow .2s;
+    }
+    .field input:focus, .field select:focus { border-color: var(--sea-dark); box-shadow: 0 0 0 3px rgba(22,125,118,.1); }
+    .range-wrap { display: grid; grid-template-columns: 1fr 46px; align-items: center; gap: 12px; height: 48px; }
+    .range-wrap input { accent-color: var(--sea-dark); }
+    .range-value { color: var(--ink); font: 700 12px/1 var(--mono); text-align: right; }
+    .check-field { display: flex; align-items: center; gap: 11px; min-height: 48px; padding: 0 14px; border: 1px solid var(--line); border-radius: 11px; background: var(--paper); }
+    .check-field input { width: 17px; height: 17px; accent-color: var(--sea-dark); }
+    .check-field label { color: var(--ink); font-size: 12px; cursor: pointer; }
+    .lab-note { margin: 25px 0 0; color: var(--muted); font-size: 10px; line-height: 1.6; }
+    .lab-result { position: relative; display: flex; flex-direction: column; justify-content: space-between; min-height: 580px; padding: 42px; background: var(--deep); color: var(--white); overflow: hidden; }
+    .lab-result::after { content: ""; position: absolute; right: -120px; bottom: -180px; width: 420px; height: 420px; border: 1px solid rgba(66,199,184,.18); border-radius: 50%; box-shadow: 0 0 0 70px rgba(66,199,184,.025); }
+    .result-label { color: var(--sea); font: 700 10px/1 var(--mono); letter-spacing: .13em; text-transform: uppercase; }
+    .probability { position: relative; z-index: 2; margin: 23px 0 10px; font: 400 clamp(72px, 8vw, 108px)/.9 var(--display); letter-spacing: -.07em; }
+    .result-state { display: inline-flex; align-items: center; gap: 8px; color: #b9c7c6; font-size: 12px; }
+    .result-state::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--state, var(--sea)); box-shadow: 0 0 0 5px rgba(66,199,184,.12); }
+    .result-explain { position: relative; z-index: 2; margin-top: 36px; }
+    .result-explain p { color: #95a8a8; font-size: 12px; line-height: 1.65; }
+    .factor-list { display: grid; gap: 9px; margin-top: 18px; }
+    .factor { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 12px 0; border-top: 1px solid rgba(255,255,255,.1); font-size: 11px; }
+    .factor b { font-family: var(--mono); }
+    .factor .positive { color: var(--sea); }
+    .factor .negative { color: var(--signal); }
+
+    .closing { padding: 90px 0; background: var(--signal); color: var(--deep); }
+    .closing-grid { display: grid; grid-template-columns: 1.2fr .8fr; align-items: end; gap: 80px; }
+    .closing h2 { max-width: 720px; margin: 0; font: 400 clamp(43px, 6vw, 78px)/.95 var(--display); letter-spacing: -.055em; }
+    .closing p { margin: 0 0 8px; line-height: 1.7; }
+    .closing-links { display: flex; gap: 18px; margin-top: 25px; font-size: 12px; font-weight: 750; }
+    footer { padding: 28px 0; background: var(--deep); color: #789091; }
+    .footer-inner { display: flex; justify-content: space-between; gap: 30px; font: 10px/1.5 var(--mono); text-transform: uppercase; letter-spacing: .06em; }
+
+    .reveal { opacity: 0; transform: translateY(22px); transition: opacity .65s ease, transform .65s ease; }
+    .reveal.visible { opacity: 1; transform: none; }
+
+    @media (max-width: 980px) {
+      .hero-grid, .section-head, .process-grid, .model-layout, .lab-panel, .closing-grid { grid-template-columns: 1fr; }
+      .hero { padding-top: 130px; }
+      .hero-visual { min-height: 440px; }
+      .section-head { gap: 22px; }
+      .section-head p { margin-left: 0; }
+      .metric-card { grid-column: span 6; }
+      .explore-layout { grid-template-columns: 1fr; }
+      .feature-card { grid-column: span 6; }
+      .feature-card:nth-child(4), .feature-card:nth-child(5) { grid-column: span 6; }
+      .lab-result { min-height: 490px; }
+      .closing-grid { gap: 35px; }
+    }
+
+    @media (max-width: 700px) {
+      .shell { width: min(100% - 24px, 1180px); }
+      .nav-links a:not(.nav-cta) { display: none; }
+      .nav-cta { font-size: 11px; }
+      .brand small { display: none; }
+      .hero { min-height: auto; padding-bottom: 62px; }
+      h1 { font-size: clamp(50px, 17vw, 73px); }
+      .hero-actions { align-items: stretch; flex-direction: column; }
+      .hero-visual { min-height: 390px; }
+      .radar { width: 330px; max-width: 94vw; }
+      .survival-ring { width: 170px; height: 170px; }
+      .tag-one { right: 0; }
+      .tag-two { left: 0; }
+      .tag-three { right: 3%; bottom: 0; }
+      .hero-foot { grid-template-columns: repeat(2, 1fr); gap: 22px 0; }
+      .hero-stat:nth-child(3) { padding-left: 0; border-left: 0; }
+      section { padding: 82px 0; }
+      .metric-card, .feature-card, .feature-card:nth-child(4), .feature-card:nth-child(5) { grid-column: span 12; }
+      .panel-top { align-items: stretch; flex-direction: column; }
+      .segmented { width: 100%; }
+      .segment { flex: 1; padding-inline: 8px; }
+      .chart-panel, .insight-panel, .process-detail, .model-card, .matrix-card, .lab-form, .lab-result { padding: 24px; }
+      .bar-row { grid-template-columns: 86px 1fr 49px; gap: 10px; }
+      .chart-note { margin-left: 0; }
+      .missing-strip { grid-template-columns: 1fr; }
+      .process-step { grid-template-columns: 47px 1fr 20px; }
+      .process-detail { min-height: 410px; }
+      .model-row { grid-template-columns: 110px 1fr; }
+      .thin-bar b { display: none; }
+      .form-grid { grid-template-columns: 1fr; }
+      .footer-inner { flex-direction: column; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
+      .reveal { opacity: 1; transform: none; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">İçeriğe geç</a>
+
+  <header class="site-header">
+    <div class="shell nav">
+      <a class="brand" href="#top" aria-label="Titanic proje özeti ana sayfa">
+        <span class="brand-mark">T</span>
+        <span>Titanic / DS<small>Veriden tahmine</small></span>
+      </a>
+      <nav class="nav-links" aria-label="Ana navigasyon">
+        <a href="#veri">Veri</a>
+        <a href="#surec">Süreç</a>
+        <a href="#model">Model</a>
+        <a class="nav-cta" href="#laboratuvar">Modeli dene ↗</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top">
+      <div class="shell">
+        <div class="hero-grid">
+          <div>
+            <p class="eyebrow">Python · Veri Bilimi · Sınıflandırma</p>
+            <h1>Veriden bir <em>hayatta kalma</em> hikâyesine.</h1>
+            <p class="hero-copy">Titanic yolcularının demografik ve seyahat bilgilerini analiz eden; ham veriyi anlamlı özelliklere, ardından açıklanabilir bir tahmin modeline dönüştüren uçtan uca çalışma.</p>
+            <div class="hero-actions">
+              <a class="button button-primary" href="#veri">Analizi keşfet <span class="arrow">→</span></a>
+              <a class="button button-secondary" href="#laboratuvar">Canlı modeli dene</a>
+            </div>
+          </div>
+
+          <div class="hero-visual" aria-label="Genel hayatta kalma oranı yüzde 38,4">
+            <div class="radar">
+              <div class="radar-lines"></div>
+              <div class="survival-ring">
+                <div class="ring-content">
+                  <strong>38,4%</strong>
+                  <span>Hayatta kalma<br>oranı</span>
+                </div>
+              </div>
+              <div class="orbit-tag tag-one"><strong>891</strong> yolcu kaydı</div>
+              <div class="orbit-tag tag-two"><strong>18</strong> model girdisi</div>
+              <div class="orbit-tag tag-three"><strong>84,4%</strong> doğruluk</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="hero-foot" aria-label="Proje özeti">
+          <div class="hero-stat"><strong>12</strong><span>orijinal sütun</span></div>
+          <div class="hero-stat"><strong>5</strong><span>yeni özellik</span></div>
+          <div class="hero-stat"><strong>3</strong><span>karşılaştırılan model</span></div>
+          <div class="hero-stat"><strong>418</strong><span>test tahmini</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="overview" id="veri">
+      <div class="shell">
+        <div class="section-head reveal">
+          <div>
+            <span class="section-index">01 — Veri portresi</span>
+            <h2>891 yaşam,<br>tek veri seti.</h2>
+          </div>
+          <p>Çalışma, Kaggle Titanic eğitim verisindeki 12 temel değişkeni inceliyor. İlk bakış bile dengesiz hedef dağılımını, eksik değerleri ve yolcu profilleri arasındaki dramatik farkları görünür kılıyor.</p>
+        </div>
+
+        <div class="overview-grid reveal">
+          <article class="metric-card"><span class="metric-icon">#</span><strong class="counter" data-value="891">891</strong><span>Toplam yolcu</span></article>
+          <article class="metric-card"><span class="metric-icon">✓</span><strong class="counter" data-value="342">342</strong><span>Hayatta kalan</span></article>
+          <article class="metric-card"><span class="metric-icon">×</span><strong class="counter" data-value="549">549</strong><span>Hayatını kaybeden</span></article>
+          <article class="metric-card"><span class="metric-icon">Ø</span><strong>29,7</strong><span>Ortalama yaş</span></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="explore" aria-labelledby="explore-title">
+      <div class="shell">
+        <div class="section-head reveal">
+          <div>
+            <span class="section-index">02 — Keşifsel analiz</span>
+            <h2 id="explore-title">Veri ne<br>söylüyor?</h2>
+          </div>
+          <p>Kategoriler arasında geçiş yap. Çubuklar her grubun gerçek hayatta kalma oranını, yan bilgiler ise örneklem büyüklüğünü gösteriyor.</p>
+        </div>
+
+        <div class="explore-layout reveal">
+          <article class="chart-panel">
+            <div class="panel-top">
+              <div><div class="panel-kicker">Hayatta kalma oranı</div><h3 class="panel-title" id="chart-title">Cinsiyete göre</h3></div>
+              <div class="segmented" role="tablist" aria-label="Analiz kırılımı">
+                <button class="segment active" type="button" role="tab" aria-selected="true" data-view="gender">Cinsiyet</button>
+                <button class="segment" type="button" role="tab" aria-selected="false" data-view="class">Sınıf</button>
+                <button class="segment" type="button" role="tab" aria-selected="false" data-view="port">Liman</button>
+              </div>
+            </div>
+            <div class="bars" id="bars" aria-live="polite"></div>
+            <p class="chart-note" id="chart-note">Kadın yolcuların hayatta kalma oranı erkeklerin yaklaşık dört katı.</p>
+          </article>
+
+          <aside class="insight-panel" id="insight-card" data-number="4×">
+            <span class="insight-label">Öne çıkan bulgu</span>
+            <blockquote id="insight-text">Cinsiyet, hayatta kalma ile en güçlü ilişkiyi gösteren değişkenlerden biri.</blockquote>
+            <div class="insight-meta" id="insight-meta">Kadın %74,2 · Erkek %18,9</div>
+          </aside>
+        </div>
+
+        <div class="missing-strip reveal" aria-label="Eksik değerler">
+          <div class="missing-item"><div class="missing-top"><span>Age</span><strong>177 / 891</strong></div><div class="mini-track"><div class="mini-fill" style="width:19.9%"></div></div></div>
+          <div class="missing-item"><div class="missing-top"><span>Cabin</span><strong>687 / 891</strong></div><div class="mini-track"><div class="mini-fill" style="width:77.1%"></div></div></div>
+          <div class="missing-item"><div class="missing-top"><span>Embarked</span><strong>2 / 891</strong></div><div class="mini-track"><div class="mini-fill" style="width:.3%"></div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="process" id="surec">
+      <div class="shell">
+        <div class="section-head reveal">
+          <div>
+            <span class="section-index">03 — İş akışı</span>
+            <h2>Ham veriden<br>karara.</h2>
+          </div>
+          <p>Proje, tekrarlanabilir modüllere ayrılmış bir veri bilimi hattı izliyor. Adımlara dokunarak her aşamada ne olduğunu ve repodaki karşılığını görebilirsin.</p>
+        </div>
+
+        <div class="process-grid reveal">
+          <div class="process-nav" role="tablist" aria-label="Veri bilimi süreci">
+            <button class="process-step active" type="button" role="tab" aria-selected="true" data-step="0"><span class="step-no">01</span><span class="step-copy"><strong>Veriyi anla</strong><small>891 × 12 ham tablo</small></span><span class="step-arrow">→</span></button>
+            <button class="process-step" type="button" role="tab" aria-selected="false" data-step="1"><span class="step-no">02</span><span class="step-copy"><strong>Eksikleri temizle</strong><small>Yaş, liman ve kabin</small></span><span class="step-arrow">→</span></button>
+            <button class="process-step" type="button" role="tab" aria-selected="false" data-step="2"><span class="step-no">03</span><span class="step-copy"><strong>Özellik üret</strong><small>5 yeni sinyal</small></span><span class="step-arrow">→</span></button>
+            <button class="process-step" type="button" role="tab" aria-selected="false" data-step="3"><span class="step-no">04</span><span class="step-copy"><strong>Modeli eğit</strong><small>Stratified 80 / 20</small></span><span class="step-arrow">→</span></button>
+            <button class="process-step" type="button" role="tab" aria-selected="false" data-step="4"><span class="step-no">05</span><span class="step-copy"><strong>Değerlendir</strong><small>Accuracy, F1, ROC-AUC</small></span><span class="step-arrow">→</span></button>
+          </div>
+
+          <article class="process-detail" aria-live="polite">
+            <span class="detail-count" id="detail-count">ADIM 01 / 05</span>
+            <h3 id="detail-title">Önce yolcuları ve veri kalitesini tanı.</h3>
+            <p id="detail-copy">Hedef dağılımı, sayısal özetler ve kategorik kırılımlar inceleniyor. Bu aşama, sonraki temizleme ve özellik mühendisliği kararlarının zeminini kuruyor.</p>
+            <div class="detail-code"><code id="detail-code">df.shape  →  (891, 12)\ndf["Survived"].mean()  →  0.3838</code></div>
+            <div class="detail-tags" id="detail-tags"><span class="detail-tag">pandas</span><span class="detail-tag">EDA</span><span class="detail-tag">12 sütun</span></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="features" aria-labelledby="features-title">
+      <div class="shell">
+        <div class="section-head reveal">
+          <div>
+            <span class="section-index">04 — Özellik mühendisliği</span>
+            <h2 id="features-title">Satırların<br>arasındaki sinyal.</h2>
+          </div>
+          <p>Orijinal sütunlar tek başına yeterli değil. İsim, aile yapısı, ücret ve kabin bilgisinden modelin daha rahat okuyabileceği beş yeni değişken çıkarılıyor.</p>
+        </div>
+
+        <div class="feature-grid reveal">
+          <article class="feature-card"><span class="feature-no">F / 01</span><span class="feature-glyph">T</span><h3>Title</h3><p>İsim içinden Mr, Mrs, Miss, Master ve Rare unvanları çıkarılır; yaş ve sosyal profil sinyali korunur.</p><span class="formula">Name → Title</span></article>
+          <article class="feature-card"><span class="feature-no">F / 02</span><span class="feature-glyph">⌂</span><h3>HasCabin</h3><p>%77'si eksik Cabin sütunu atılmak yerine, kabin kaydının varlığını anlatan ikili sinyale dönüşür.</p><span class="formula">Cabin ≠ null → 1</span></article>
+          <article class="feature-card"><span class="feature-no">F / 03</span><span class="feature-glyph">+</span><h3>FamilySize</h3><p>Yolcunun gemideki toplam aile büyüklüğünü kardeş, eş, ebeveyn ve çocuk sayısından hesaplar.</p><span class="formula">SibSp + Parch + 1</span></article>
+          <article class="feature-card"><span class="feature-no">F / 04</span><span class="feature-glyph">1</span><h3>IsAlone</h3><p>Tek başına seyahat edenleri işaretler. Yalnız yolcuların hayatta kalma oranı %30,4 iken ailesiyle olanlarda %50,6.</p><span class="formula">FamilySize = 1 → 1</span></article>
+          <article class="feature-card"><span class="feature-no">F / 05</span><span class="feature-glyph">÷</span><h3>Fare per Person</h3><p>Bilet ücretini aile büyüklüğüne bölerek, ortak biletlerde kişi başına düşen gerçek harcama sinyalini yakalar.</p><span class="formula">Fare / FamilySize</span></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="models" id="model">
+      <div class="shell">
+        <div class="section-head reveal">
+          <div>
+            <span class="section-index">05 — Model seçimi</span>
+            <h2>En karmaşık<br>olan kazanmadı.</h2>
+          </div>
+          <p>Lojistik Regresyon, karar ağacı ve rastgele orman karşılaştırıldı. Daha sade model, doğrulama setinde hem daha yüksek doğruluk hem de daha sağlıklı genelleme sundu.</p>
+        </div>
+
+        <div class="model-layout reveal">
+          <article class="model-card">
+            <div class="panel-top">
+              <div><div class="panel-kicker">Model karşılaştırması</div><h3 class="panel-title">Eğitim vs. doğrulama</h3></div>
+              <div class="legend"><span><i></i>Doğrulama</span><span><i></i>Eğitim</span></div>
+            </div>
+            <div class="model-bars">
+              <div class="model-row"><div class="model-name"><strong class="winner">Lojistik Regresyon</strong><small>seçilen model</small></div><div class="dual-bars"><div class="thin-bar" style="--value:84.36"><span style="width:84.36%"></span><b>%84,4</b></div><div class="thin-bar train" style="--value:83.85"><span style="width:83.85%"></span><b>%83,9</b></div></div></div>
+              <div class="model-row"><div class="model-name"><strong>Karar Ağacı</strong><small>yüksek varyans</small></div><div class="dual-bars"><div class="thin-bar" style="--value:78.21"><span style="width:78.21%"></span><b>%78,2</b></div><div class="thin-bar train" style="--value:98.74"><span style="width:98.74%"></span><b>%98,7</b></div></div></div>
+              <div class="model-row"><div class="model-name"><strong>Rastgele Orman</strong><small>tuned</small></div><div class="dual-bars"><div class="thin-bar" style="--value:81.01"><span style="width:81.01%"></span><b>%81,0</b></div><div class="thin-bar train" style="--value:92.56"><span style="width:92.56%"></span><b>%92,6</b></div></div></div>
+            </div>
+            <p class="model-summary"><strong>Neden lojistik regresyon?</strong> Eğitim ve doğrulama performansı arasındaki yalnızca 0,5 puanlık fark, modelin veriyi ezberlemek yerine daha iyi genellediğine işaret ediyor.</p>
+          </article>
+
+          <aside class="matrix-card">
+            <div class="matrix-head"><div><div class="panel-kicker">Doğrulama seti</div><h3 class="panel-title">Confusion matrix</h3></div><span class="score-chip">AUC 0.874</span></div>
+            <div class="matrix" aria-label="Karmaşıklık matrisi">
+              <div class="matrix-cell good"><div><strong>97</strong><small>DOĞRU NEGATİF</small></div></div>
+              <div class="matrix-cell bad"><div><strong>13</strong><small>YANLIŞ POZİTİF</small></div></div>
+              <div class="matrix-cell bad"><div><strong>15</strong><small>YANLIŞ NEGATİF</small></div></div>
+              <div class="matrix-cell good"><div><strong>54</strong><small>DOĞRU POZİTİF</small></div></div>
+            </div>
+            <div class="matrix-axis">Tahmin edilen sınıf →</div>
+            <div class="score-grid"><div><strong>%80,6</strong><span>Precision</span></div><div><strong>%78,3</strong><span>Recall</span></div><div><strong>%79,4</strong><span>F1-score</span></div></div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section class="lab" id="laboratuvar">
+      <div class="shell">
+        <div class="section-head reveal">
+          <div>
+            <span class="section-index">06 — Yolcu laboratuvarı</span>
+            <h2>Modelin yerine<br>sen geç.</h2>
+          </div>
+          <p>Bir yolcu profili oluştur. Sonuç, projede eğitilen lojistik regresyonun katsayılarıyla tarayıcı içinde anlık olarak hesaplanır.</p>
+        </div>
+
+        <div class="lab-panel reveal">
+          <form class="lab-form" id="passenger-form">
+            <div class="presets" aria-label="Hazır yolcu profilleri">
+              <button class="preset" type="button" data-preset="firstWoman">1. sınıf kadın</button>
+              <button class="preset" type="button" data-preset="thirdMan">3. sınıf erkek</button>
+              <button class="preset" type="button" data-preset="familyChild">Ailesiyle çocuk</button>
+            </div>
+            <div class="form-grid">
+              <div class="field"><label for="sex">Cinsiyet</label><select id="sex"><option value="0">Kadın</option><option value="1">Erkek</option></select></div>
+              <div class="field"><label for="pclass">Yolcu sınıfı</label><select id="pclass"><option value="1">1. sınıf</option><option value="2">2. sınıf</option><option value="3">3. sınıf</option></select></div>
+              <div class="field"><label for="age">Yaş</label><div class="range-wrap"><input id="age" type="range" min="1" max="80" value="28"><output class="range-value" id="age-value">28</output></div></div>
+              <div class="field"><label for="fare">Bilet ücreti (£)</label><input id="fare" type="number" min="0" max="520" step="0.1" value="71.3"></div>
+              <div class="field"><label for="sibsp">Kardeş / eş</label><input id="sibsp" type="number" min="0" max="8" value="0"></div>
+              <div class="field"><label for="parch">Ebeveyn / çocuk</label><input id="parch" type="number" min="0" max="6" value="0"></div>
+              <div class="field"><label for="title">Unvan</label><select id="title"><option value="Miss">Miss</option><option value="Mrs">Mrs</option><option value="Mr">Mr</option><option value="Master">Master</option><option value="Rare">Rare</option></select></div>
+              <div class="field"><label for="embarked">Biniş limanı</label><select id="embarked"><option value="C">Cherbourg</option><option value="Q">Queenstown</option><option value="S">Southampton</option></select></div>
+              <div class="field"><label>Kabin kaydı</label><div class="check-field"><input id="cabin" type="checkbox" checked><label for="cabin">Kabin bilgisi var</label></div></div>
+            </div>
+            <p class="lab-note">Bu araç tarihsel ve eğitsel bir model demosudur; gerçek dünyada kişiler hakkında karar vermek için tasarlanmamıştır.</p>
+          </form>
+
+          <aside class="lab-result" aria-live="polite">
+            <div>
+              <span class="result-label">Tahmini hayatta kalma olasılığı</span>
+              <div class="probability" id="probability">—</div>
+              <div class="result-state" id="result-state">Profil hesaplanıyor</div>
+            </div>
+            <div class="result-explain">
+              <p>Modelin bu profil için en etkili gördüğü sinyaller:</p>
+              <div class="factor-list" id="factor-list"></div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section class="closing">
+      <div class="shell closing-grid">
+        <h2>Bir notebook'tan daha fazlası: tekrarlanabilir bir tahmin hattı.</h2>
+        <div><p>Analiz, özellik mühendisliği, eğitim ve tahmin kodları ayrı modüller halinde düzenlendi. Final model 418 test yolcusu için Kaggle uyumlu çıktı üretiyor.</p><div class="closing-links"><a href="#top">Başa dön ↑</a><a href="#surec">Akışı incele →</a></div></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="shell footer-inner"><span>Titanic Survival Prediction</span><span>Python · Pandas · Scikit-learn · 2026</span></div>
+  </footer>
+
+  <script>
+    const analysisViews = {
+      gender: {
+        title: 'Cinsiyete göre',
+        rows: [
+          { label: 'Kadın', sub: '314 yolcu', value: 74.2 },
+          { label: 'Erkek', sub: '577 yolcu', value: 18.9 }
+        ],
+        note: 'Kadın yolcuların hayatta kalma oranı erkeklerin yaklaşık dört katı.',
+        insight: 'Cinsiyet, hayatta kalma ile en güçlü ilişkiyi gösteren değişkenlerden biri.',
+        meta: 'Kadın %74,2 · Erkek %18,9', number: '4×'
+      },
+      class: {
+        title: 'Yolcu sınıfına göre',
+        rows: [
+          { label: '1. sınıf', sub: '216 yolcu', value: 63.0 },
+          { label: '2. sınıf', sub: '184 yolcu', value: 47.3 },
+          { label: '3. sınıf', sub: '491 yolcu', value: 24.2 }
+        ],
+        note: '1. sınıftaki bir yolcunun hayatta kalma oranı 3. sınıfın 2,6 katı.',
+        insight: 'Sosyoekonomik konum, gemideki hayatta kalma ihtimalini keskin biçimde ayırıyor.',
+        meta: '1. sınıf %63,0 · 3. sınıf %24,2', number: '2.6×'
+      },
+      port: {
+        title: 'Biniş limanına göre',
+        rows: [
+          { label: 'Cherbourg', sub: '168 yolcu', value: 55.4 },
+          { label: 'Queenstown', sub: '77 yolcu', value: 39.0 },
+          { label: 'Southampton', sub: '644 yolcu', value: 33.7 }
+        ],
+        note: 'Cherbourg çıkışlı yolcular en yüksek hayatta kalma oranına sahip.',
+        insight: 'Liman etkisi tek başına nedensel değil; sınıf ve yolcu profili bileşimini de yansıtıyor.',
+        meta: 'C %55,4 · Q %39,0 · S %33,7', number: 'C'
+      }
+    };
+
+    const bars = document.querySelector('#bars');
+    function renderAnalysis(key) {
+      const view = analysisViews[key];
+      bars.innerHTML = view.rows.map(row => `
+        <div class="bar-row">
+          <div class="bar-label"><strong>${row.label}</strong><small>${row.sub}</small></div>
+          <div class="bar-track"><div class="bar-fill" data-width="${row.value}"></div></div>
+          <div class="bar-value">%${row.value.toLocaleString('tr-TR', { minimumFractionDigits: 1 })}</div>
+        </div>`).join('');
+      document.querySelector('#chart-title').textContent = view.title;
+      document.querySelector('#chart-note').textContent = view.note;
+      document.querySelector('#insight-text').textContent = view.insight;
+      document.querySelector('#insight-meta').textContent = view.meta;
+      document.querySelector('#insight-card').dataset.number = view.number;
+      requestAnimationFrame(() => document.querySelectorAll('.bar-fill').forEach(bar => { bar.style.width = `${bar.dataset.width}%`; }));
+    }
+
+    document.querySelectorAll('.segment').forEach(button => {
+      button.addEventListener('click', () => {
+        document.querySelectorAll('.segment').forEach(item => { item.classList.remove('active'); item.setAttribute('aria-selected', 'false'); });
+        button.classList.add('active');
+        button.setAttribute('aria-selected', 'true');
+        renderAnalysis(button.dataset.view);
+      });
+    });
+    renderAnalysis('gender');
+
+    const processSteps = [
+      {
+        title: 'Önce yolcuları ve veri kalitesini tanı.',
+        copy: 'Hedef dağılımı, sayısal özetler ve kategorik kırılımlar inceleniyor. Bu aşama, sonraki temizleme ve özellik mühendisliği kararlarının zeminini kuruyor.',
+        code: 'df.shape  →  (891, 12)\ndf["Survived"].mean()  →  0.3838', tags: ['pandas', 'EDA', '12 sütun']
+      },
+      {
+        title: 'Her eksik değer aynı şekilde ele alınmaz.',
+        copy: 'Age, unvan gruplarının medyanıyla; Embarked en sık limanla tamamlanıyor. Cabin ise %77 eksik olduğu için doldurulmuyor, varlık bilgisine dönüştürülüyor.',
+        code: 'Age  ←  median(Title)\nEmbarked  ←  mode()\nCabin  →  HasCabin', tags: ['177 yaş', '2 liman', '687 kabin']
+      },
+      {
+        title: 'Ham sütunlardan daha anlamlı sinyaller çıkar.',
+        copy: 'İsimden unvan, aile bağlarından toplam aile büyüklüğü, kabinden bulunabilirlik ve ücretten kişi başı ödeme türetiliyor.',
+        code: 'FamilySize = SibSp + Parch + 1\nFareperPerson = Fare / FamilySize', tags: ['Title', 'FamilySize', 'IsAlone', 'HasCabin', 'FareperPerson']
+      },
+      {
+        title: 'Aynı zeminde üç modeli karşılaştır.',
+        copy: 'Veri hedef dağılımını koruyacak şekilde %80 eğitim ve %20 doğrulama olarak ayrılıyor. Lojistik regresyon temel model olarak, ağaç tabanlı yöntemler alternatif olarak eğitiliyor.',
+        code: 'train_test_split(test_size=.2, stratify=y)\nLogisticRegression(max_iter=1000)', tags: ['712 eğitim', '179 doğrulama', 'random_state=42']
+      },
+      {
+        title: 'Sadece doğruluğa değil, genellemeye bak.',
+        copy: 'Accuracy, precision, recall, F1, ROC-AUC ve 5 katlı çapraz doğrulama birlikte okunuyor. Lojistik regresyon daha düşük aşırı öğrenme riskiyle final model seçiliyor.',
+        code: 'accuracy  →  0.8436\nROC–AUC   →  0.8743\n5-fold CV →  0.8260 ± 0.0271', tags: ['F1 0.794', 'CV=5', 'final model']
+      }
+    ];
+
+    document.querySelectorAll('.process-step').forEach(button => {
+      button.addEventListener('click', () => {
+        const index = Number(button.dataset.step);
+        const step = processSteps[index];
+        document.querySelectorAll('.process-step').forEach(item => { item.classList.remove('active'); item.setAttribute('aria-selected', 'false'); });
+        button.classList.add('active');
+        button.setAttribute('aria-selected', 'true');
+        document.querySelector('#detail-count').textContent = `ADIM ${String(index + 1).padStart(2, '0')} / 05`;
+        document.querySelector('#detail-title').textContent = step.title;
+        document.querySelector('#detail-copy').textContent = step.copy;
+        document.querySelector('#detail-code').textContent = step.code;
+        document.querySelector('#detail-tags').innerHTML = step.tags.map(tag => `<span class="detail-tag">${tag}</span>`).join('');
+      });
+    });
+
+    const coefficients = {
+      Pclass: -0.7446496877, Sex: -1.3692645650, Age: -0.0352347459,
+      SibSp: -0.2101033245, Parch: -0.0604784690, Fare: 0.0015436612,
+      FamilySize: -0.2865030918, FareperPerson: 0.0012591467,
+      IsAlone: -0.3129553622, HasCabin: 0.8787630448,
+      Embarked_C: 0.0120987552, Embarked_Q: 0.2698893001, Embarked_S: -0.2979093535,
+      Title_Master: 1.0681049726, Title_Miss: -0.1001292168, Title_Mr: -1.3538262868,
+      Title_Mrs: 0.7264141234, Title_Rare: -0.3564848906
+    };
+    const intercept = 4.3936503673;
+    const formIds = ['sex', 'pclass', 'age', 'fare', 'sibsp', 'parch', 'title', 'embarked', 'cabin'];
+
+    function readNumber(id) {
+      const el = document.querySelector(`#${id}`);
+      const value = Number(el.value);
+      return Number.isFinite(value) ? value : 0;
+    }
+
+    function calculatePrediction() {
+      const pclass = readNumber('pclass');
+      const sex = readNumber('sex');
+      const age = readNumber('age');
+      const fare = Math.max(0, readNumber('fare'));
+      const sibsp = Math.max(0, readNumber('sibsp'));
+      const parch = Math.max(0, readNumber('parch'));
+      const familySize = sibsp + parch + 1;
+      const isAlone = familySize === 1 ? 1 : 0;
+      const hasCabin = document.querySelector('#cabin').checked ? 1 : 0;
+      const title = document.querySelector('#title').value;
+      const embarked = document.querySelector('#embarked').value;
+      const values = {
+        Pclass: pclass, Sex: sex, Age: age, SibSp: sibsp, Parch: parch, Fare: fare,
+        FamilySize: familySize, FareperPerson: fare / familySize, IsAlone: isAlone, HasCabin: hasCabin,
+        Embarked_C: embarked === 'C' ? 1 : 0, Embarked_Q: embarked === 'Q' ? 1 : 0, Embarked_S: embarked === 'S' ? 1 : 0,
+        Title_Master: title === 'Master' ? 1 : 0, Title_Miss: title === 'Miss' ? 1 : 0,
+        Title_Mr: title === 'Mr' ? 1 : 0, Title_Mrs: title === 'Mrs' ? 1 : 0, Title_Rare: title === 'Rare' ? 1 : 0
+      };
+      const contributions = Object.entries(values).map(([key, value]) => ({ key, value: value * coefficients[key] }));
+      const score = contributions.reduce((total, item) => total + item.value, intercept);
+      const probability = 1 / (1 + Math.exp(-score));
+      const percentage = probability * 100;
+      document.querySelector('#probability').textContent = `%${percentage.toLocaleString('tr-TR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`;
+      document.querySelector('#result-state').textContent = percentage >= 50 ? 'Model: hayatta kalır' : 'Model: hayatta kalamaz';
+      document.querySelector('#result-state').style.setProperty('--state', percentage >= 50 ? 'var(--sea)' : 'var(--signal)');
+
+      const names = { Pclass: 'Yolcu sınıfı', Sex: 'Cinsiyet', Age: 'Yaş', HasCabin: 'Kabin kaydı', Title_Master: 'Master unvanı', Title_Mr: 'Mr unvanı', Title_Mrs: 'Mrs unvanı', FamilySize: 'Aile büyüklüğü', IsAlone: 'Yalnız seyahat', Embarked_S: 'Southampton', Embarked_Q: 'Queenstown', Fare: 'Bilet ücreti' };
+      const strongest = contributions.filter(item => Math.abs(item.value) > .01).sort((a, b) => Math.abs(b.value) - Math.abs(a.value)).slice(0, 4);
+      document.querySelector('#factor-list').innerHTML = strongest.map(item => `<div class="factor"><span>${names[item.key] || item.key.replace('_', ' ')}</span><b class="${item.value >= 0 ? 'positive' : 'negative'}">${item.value >= 0 ? '+' : ''}${item.value.toFixed(2)}</b></div>`).join('');
+      document.querySelector('#age-value').textContent = age;
+    }
+
+    formIds.forEach(id => {
+      const field = document.querySelector(`#${id}`);
+      field.addEventListener('input', calculatePrediction);
+      field.addEventListener('change', calculatePrediction);
+    });
+
+    const presets = {
+      firstWoman: { sex: '0', pclass: '1', age: '32', fare: '86', sibsp: '0', parch: '0', title: 'Mrs', embarked: 'C', cabin: true },
+      thirdMan: { sex: '1', pclass: '3', age: '28', fare: '8', sibsp: '0', parch: '0', title: 'Mr', embarked: 'S', cabin: false },
+      familyChild: { sex: '1', pclass: '2', age: '8', fare: '30', sibsp: '1', parch: '2', title: 'Master', embarked: 'S', cabin: false }
+    };
+    document.querySelectorAll('.preset').forEach(button => {
+      button.addEventListener('click', () => {
+        const preset = presets[button.dataset.preset];
+        Object.entries(preset).forEach(([key, value]) => {
+          const element = document.querySelector(`#${key}`);
+          if (element.type === 'checkbox') element.checked = value;
+          else element.value = value;
+        });
+        calculatePrediction();
+      });
+    });
+    calculatePrediction();
+
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => { if (entry.isIntersecting) entry.target.classList.add('visible'); });
+    }, { threshold: .12 });
+    document.querySelectorAll('.reveal').forEach(element => observer.observe(element));
+
+    const sections = [...document.querySelectorAll('section[id]')];
+    const navLinks = [...document.querySelectorAll('.nav-links a[href^="#"]')];
+    window.addEventListener('scroll', () => {
+      const current = sections.filter(section => section.offsetTop <= window.scrollY + 140).pop();
+      navLinks.forEach(link => link.classList.toggle('active', current && link.getAttribute('href') === `#${current.id}`));
+    }, { passive: true });
+  </script>
+</body>
+</html>

@@ -1,691 +1,278 @@
-**# Titanic Survival Prediction**
+# 🚢 Titanic Survival Prediction
 
-**## Project Overview**
+An end-to-end machine learning project that predicts passenger survival on the Titanic dataset.
 
-This project implements an end-to-end machine learning workflow for predicting passenger survival on the Titanic.
+The project covers the complete workflow from **exploratory data analysis and feature engineering to model training, evaluation, prediction, and a simple web-based frontend for presenting the project results.**
 
-The project covers the complete data science lifecycle, including exploratory data analysis (EDA), data cleaning, feature engineering, preprocessing, model training, model comparison, cross-validation, hyperparameter tuning, model evaluation, and final prediction generation.
+---
 
-The initial analysis and experimentation were performed in a Jupyter Notebook. After the modeling stage, the workflow was refactored into reusable Python modules for preprocessing, feature engineering, training, evaluation, and prediction.
+## 📌 Project Overview
 
-\---
+The main objective of this project is to predict whether a Titanic passenger survived based on passenger information such as age, gender, passenger class, fare, family information, and cabin availability.
 
-**## Dataset**
+The project includes:
 
-The project uses the Titanic dataset consisting of:
+* Exploratory Data Analysis (EDA)
+* Data preprocessing
+* Feature engineering
+* Logistic Regression
+* Decision Tree
+* Random Forest
+* Cross-validation
+* Hyperparameter tuning
+* Model evaluation
+* Prediction pipeline
+* HTML/CSS/JavaScript frontend
 
-\* \`train.csv\` — 891 passengers with survival labels
+---
 
-\* \`test.csv\` — 418 passengers used for final predictions
+## 🔎 Exploratory Data Analysis
 
-The target variable is:
+The Titanic training dataset contains **891 passengers**.
 
-\* \`Survived\`
+During EDA, the dataset was analyzed for:
 
-  \* \`0\` — Did not survive
+* Missing values
+* Feature distributions
+* Survival rates
+* Numerical and categorical variables
+* Relationships between passenger characteristics and survival
 
-  \* \`1\` — Survived
+Important missing values were found in `Age`, `Cabin`, and `Embarked`.
 
-Important original features include:
+---
 
-\* \`Pclass\` — Passenger class
+## 🛠 Feature Engineering
 
-\* \`Sex\` — Passenger sex
+New features were created from the original passenger information to improve the dataset used by the models.
 
-\* \`Age\` — Passenger age
+### `Title`
 
-\* \`SibSp\` — Number of siblings/spouses aboard
+Passenger titles were extracted from the `Name` column and grouped into:
 
-\* \`Parch\` — Number of parents/children aboard
+```text
+Mr
+Miss
+Mrs
+Master
+Rare
+```
 
-\* \`Fare\` — Passenger fare
+### `FamilySize`
 
-\* \`Cabin\` — Cabin information
-
-\* \`Embarked\` — Port of embarkation
-
-\---
-
-**## Exploratory Data Analysis**
-
-Exploratory data analysis was performed to understand the dataset, identify missing values, examine distributions, and investigate relationships between passenger characteristics and survival.
-
-The analysis included:
-
-\* Overall survival distribution
-
-\* Survival rate by sex
-
-\* Survival rate by passenger class
-
-\* Age distribution
-
-\* Fare distribution
-
-\* Survival rate by embarkation port
-
-\* Survival patterns across sex and passenger class
-
-\* Family size analysis
-
-\* Solo traveler analysis
-
-\* Missing value analysis
-
-\* Feature relationships with survival
-
-\---
-
-**## Data Cleaning**
-
-Missing values were handled according to the characteristics of each feature.
-
-**### Age**
-
-Passenger titles were extracted from names and missing age values were filled using the median age of passengers with the same title.
-
-The main title groups were:
-
-\* \`Mr\`
-
-\* \`Mrs\`
-
-\* \`Miss\`
-
-\* \`Master\`
-
-\* \`Rare\`
-
-**### Embarked**
-
-Missing \`Embarked\` values were filled using the most frequent embarkation port.
-
-**### Fare**
-
-Missing fare values were filled using the median fare.
-
-**### Cabin**
-
-Because a large proportion of the \`Cabin\` column was missing, the column was not directly imputed. Instead, cabin availability was converted into a binary feature called \`HasCabin\`.
-
-\---
-
-**## Feature Engineering**
-
-Several new features were created from the original dataset.
-
-**### Title**
-
-Passenger titles were extracted from the \`Name\` column.
-
-Less common titles were grouped into a single \`Rare\` category.
-
-**### FamilySize**
-
-Total family size was calculated as:
-
-\`\`\`text
-
+```text
 FamilySize = SibSp + Parch + 1
+```
 
-\`\`\`
+Represents the total number of family members travelling together.
 
-**### IsAlone**
+### `IsAlone`
 
-A binary feature indicating whether the passenger was traveling alone.
+Indicates whether the passenger was travelling alone.
 
-\`\`\`text
+### `HasCabin`
 
-1 = Traveling alone
+Indicates whether cabin information exists for the passenger.
 
-0 = Traveling with family
+### `FareperPerson`
 
-\`\`\`
-
-**### HasCabin**
-
-A binary feature indicating whether cabin information was available.
-
-\`\`\`text
-
-1 = Cabin information available
-
-0 = Cabin information missing
-
-\`\`\`
-
-**### FareperPerson**
-
-The fare paid per person was calculated using:
-
-\`\`\`text
-
+```text
 FareperPerson = Fare / FamilySize
+```
 
-\`\`\`
+Represents the approximate fare paid per family member.
 
-\---
+---
 
-**## Data Preprocessing**
+## 🧹 Data Preprocessing
 
-Before model training:
+The preprocessing pipeline prepares the data for machine learning.
 
-\* Missing values were handled
+Main preprocessing steps:
 
-\* Passenger titles were extracted and grouped
+* Missing `Embarked` values filled using the mode
+* Missing `Age` values filled using median age by passenger title
+* `Sex` converted into numerical values
+* `Embarked` one-hot encoded
+* `Title` one-hot encoded
+* Unnecessary columns removed
 
-\* New features were generated
+The final model uses **18 features**.
 
-\* \`Sex\` was converted into numerical values
+---
 
-\* \`Embarked\` was one-hot encoded
+## 🤖 Machine Learning Models
 
-\* \`Title\` was one-hot encoded
+Three classification algorithms were compared:
 
-\* Unnecessary columns were removed
+| Model               | Training Accuracy | Validation Accuracy |
+| ------------------- | ----------------: | ------------------: |
+| Logistic Regression |            83.85% |          **84.36%** |
+| Decision Tree       |            98.74% |              78.77% |
+| Random Forest       |            98.74% |              78.77% |
+| Tuned Random Forest |            92.56% |              81.01% |
 
-\* The target variable was separated from the features
+The Decision Tree and Random Forest models showed signs of overfitting.
 
-\* The dataset was split into training and validation sets
+Random Forest was also optimized using `GridSearchCV`.
 
-The train-validation split used:
+Based on validation performance and generalization, **Logistic Regression was selected as the final model.**
 
-\`\`\`python
+---
 
-train_test_split(
+## 📊 Final Model Performance
 
-    X,
+Logistic Regression achieved approximately:
 
-    y,
+| Metric    | Score |
+| --------- | ----: |
+| Accuracy  | 0.844 |
+| Precision | 0.806 |
+| Recall    | 0.783 |
+| F1 Score  | 0.794 |
+| ROC-AUC   | 0.874 |
 
-    test_size=0.2,
+5-fold cross-validation produced an average accuracy of approximately **82.6%**.
 
-    random_state=42,
+The trained model is saved using `joblib`:
 
-    stratify=y
-
-)
-
-\`\`\`
-
-\---
-
-**## Machine Learning Models**
-
-Three classification algorithms were evaluated.
-
-**### Logistic Regression**
-
-Logistic Regression was used as the primary baseline classification model.
-
-**### Decision Tree**
-
-A Decision Tree classifier was tested to compare a tree-based model with Logistic Regression.
-
-The model achieved very high training accuracy but lower validation accuracy, indicating overfitting.
-
-**### Random Forest**
-
-Random Forest was evaluated as an ensemble-based alternative.
-
-Hyperparameter tuning was also performed using GridSearchCV.
-
-The best tested parameters were:
-
-\`\`\`text
-
-n_estimators = 100
-
-max_depth = 10
-
-min_samples_split = 5
-
-\`\`\`
-
-\---
-
-**## Model Comparison**
-
-\| Model               | Training Accuracy | Validation Accuracy |
-
-\| ------------------- | ----------------: | ------------------: |
-
-\| Logistic Regression |            0.8385 |              0.8436 |
-
-\| Decision Tree       |            0.9874 |              0.7877 |
-
-\| Random Forest       |            0.9874 |              0.7877 |
-
-\| Tuned Random Forest |            0.9256 |              0.8101 |
-
-Logistic Regression showed the strongest validation performance among the tested models while maintaining similar training and validation accuracy.
-
-Decision Tree and the initial Random Forest model showed signs of overfitting due to the large difference between training and validation performance.
-
-\---
-
-**## Final Model Evaluation**
-
-Logistic Regression was selected as the final model.
-
-Validation results:
-
-\| Metric    |  Score |
-
-\| --------- | -----: |
-
-\| Accuracy  | 0.8436 |
-
-\| Precision | 0.8060 |
-
-\| Recall    | 0.7826 |
-
-\| F1 Score  | 0.7941 |
-
-\| ROC-AUC   | 0.8736 |
-
-**### Confusion Matrix**
-
-\`\`\`text
-
-[[97 13]
-
- [15 54]]
-
-\`\`\`
-
-This corresponds to:
-
-\* True Negatives: 97
-
-\* False Positives: 13
-
-\* False Negatives: 15
-
-\* True Positives: 54
-
-\---
-
-**## Cross-Validation**
-
-Five-fold cross-validation was used to evaluate the stability of the Logistic Regression model.
-
-Cross-validation accuracy scores:
-
-\`\`\`text
-
-0.8268
-
-0.8090
-
-0.7978
-
-0.8202
-
-0.8764
-
-\`\`\`
-
-Mean cross-validation accuracy:
-
-\`\`\`text
-
-0.8260
-
-\`\`\`
-
-Standard deviation:
-
-\`\`\`text
-
-0.0271
-
-\`\`\`
-
-The cross-validation results indicate relatively consistent performance across different subsets of the training data.
-
-\---
-
-**## Feature Analysis**
-
-Logistic Regression coefficients were analyzed to understand how different features contributed to model predictions.
-
-Some of the strongest positive coefficients included:
-
-\* \`Title_Master\`
-
-\* \`HasCabin\`
-
-\* \`Title_Mrs\`
-
-Some of the strongest negative coefficients included:
-
-\* \`Title_Mr\`
-
-\* \`Sex\`
-
-\* \`Pclass\`
-
-\* \`Title_Rare\`
-
-\* \`IsAlone\`
-
-These coefficients describe relationships learned by the model and should not be interpreted as causal effects.
-
-\---
-
-**## Final Prediction Pipeline**
-
-After model selection, the workflow was refactored from notebook-based experimentation into reusable Python modules.
-
-The final pipeline performs:
-
-\`\`\`text
-
-Raw Data
-
-   ↓
-
-Feature Engineering
-
-   ↓
-
-Missing Value Handling
-
-   ↓
-
-Categorical Encoding
-
-   ↓
-
-Model Training
-
-   ↓
-
-Model Evaluation
-
-   ↓
-
-Model Serialization
-
-   ↓
-
-Test Data Preprocessing
-
-   ↓
-
-Prediction
-
-   ↓
-
-submission.csv
-
-\`\`\`
-
-The trained Logistic Regression model is serialized using \`joblib\`.
-
-The prediction script loads the saved model, preprocesses \`test.csv\`, generates survival predictions, and creates:
-
-\`\`\`text
-
-outputs/submission.csv
-
-\`\`\`
-
-\---
-
-**## Project Structure**
-
-\`\`\`text
-
-Titanic-data-science/
-
-│
-
-├── data/
-
-│   ├── train.csv
-
-│   └── test.csv
-
-│
-
-├── notebooks/
-
-│   └── Titanic_analysis.ipynb
-
-│
-
-├── outputs/
-
-│   ├── logistic_regression_model.pkl
-
-│   └── submission.csv
-
-│
-
-├── src/
-
-│   ├── preprocessing.py
-
-│   ├── features.py
-
-│   ├── train.py
-
-│   ├── evaluate.py
-
-│   └── predict.py
-
-│
-
-├── index.html
-
-├── requirements.txt
-
-├── .gitignore
-
-└── Readme.md
-
-\`\`\`
-
-**### Module Responsibilities**
-
-\`features.py\`
-
-Creates engineered features such as \`Title\`, \`FamilySize\`, \`IsAlone\`, \`HasCabin\`, and \`FareperPerson\`.
-
-\`preprocessing.py\`
-
-Handles data loading, missing values, categorical encoding, feature preparation, and removal of unnecessary columns.
-
-\`train.py\`
-
-Loads and prepares the training data, splits the dataset, trains the Logistic Regression model, evaluates its performance, and saves the trained model.
-
-\`evaluate.py\`
-
-Calculates classification metrics including accuracy, precision, recall, F1 score, confusion matrix, and ROC-AUC.
-
-\`predict.py\`
-
-Loads the trained model, preprocesses the Titanic test dataset, generates predictions, and creates the final submission file.
-
-\---
-
-**## Installation**
-
-Clone the repository and move into the project directory:
-
-\`\`\`bash
-
-git clone \<repository-url>
-
-cd Titanic-data-science
-
-\`\`\`
-
-Create and activate a virtual environment:
-
-\`\`\`bash
-
-python -m venv .venv
-
-source .venv/bin/activate
-
-\`\`\`
-
-Install the required dependencies:
-
-\`\`\`bash
-
-pip install -r requirements.txt
-
-\`\`\`
-
-\---
-
-**## Requirements**
-
-The main dependencies are:
-
-\`\`\`text
-
-pandas==3.0.5
-
-scikit-learn==1.9.0
-
-joblib==1.6.0
-
-\`\`\`
-
-Additional libraries such as NumPy, Matplotlib, Seaborn, and Jupyter were used during exploratory data analysis and notebook-based experimentation.
-
-\---
-
-**## Usage**
-
-**### Train and Evaluate the Model**
-
-From the project root directory:
-
-\`\`\`bash
-
-python src/train.py
-
-\`\`\`
-
-This trains the Logistic Regression model, prints the validation metrics, and saves the trained model to:
-
-\`\`\`text
-
+```text
 outputs/logistic_regression_model.pkl
+```
 
-\`\`\`
+---
 
-**### Generate Predictions**
+## 🔮 Prediction Pipeline
 
-Run:
+The project includes a separate prediction pipeline for unseen passenger data.
 
-\`\`\`bash
+```text
+Passenger Data
+      ↓
+Feature Engineering
+      ↓
+Data Preprocessing
+      ↓
+Feature Alignment
+      ↓
+Logistic Regression Model
+      ↓
+Survival Prediction
+```
 
-python src/predict.py
+The same preprocessing and feature engineering logic used during training is applied to the test data before predictions are generated.
 
-\`\`\`
+---
 
-The script loads the trained model and generates:
+## 🌐 Web Interface — `index.html`
 
-\`\`\`text
+The project also includes an `index.html` page that provides a simple **frontend for presenting the machine learning project and its results**.
 
-outputs/submission.csv
+While Python handles the data processing, model training, evaluation, and prediction workflow, the web interface provides a more visual and user-friendly way to explore the project.
 
-\`\`\`
+The frontend uses:
 
-\---
+* **HTML** — page structure and content
+* **CSS** — layout and visual design
+* **JavaScript** — interactive page behavior
 
-**## Technologies**
+The frontend acts as the **presentation layer** of the project.
 
-\* Python
+```text
+Machine Learning
+Python / Scikit-learn
+        ↓
+Model Results
+        ↓
+HTML / CSS / JavaScript
+        ↓
+Web Interface
+```
 
-\* Pandas
+The page can be opened directly in a browser using:
 
-\* NumPy
+```text
+index.html
+```
 
-\* Scikit-learn
+> The current frontend is used to present the project and its results. The Scikit-learn model itself runs in Python and is not executed directly by the browser.
 
-\* Matplotlib
+---
 
-\* Seaborn
+## 📁 Project Structure
 
-\* Jupyter Notebook
+```text
+Titanic-data-science/
+│
+├── data/
+│   ├── train.csv
+│   └── test.csv
+│
+├── notebooks/
+│   └── Exploratory analysis and model experiments
+│
+├── src/
+│   ├── preprocessing.py
+│   ├── features.py
+│   ├── train.py
+│   ├── evaluate.py
+│   └── predict.py
+│
+├── outputs/
+│   └── logistic_regression_model.pkl
+│
+├── index.html
+├── Readme.md
+└── project_context.md
+```
 
-\* Git
+### Source Files
 
-\* GitHub
+* **`features.py`** — creates engineered features such as `Title`, `FamilySize`, `IsAlone`, `HasCabin`, and `FareperPerson`.
+* **`preprocessing.py`** — handles missing values, categorical encoding, and data preparation.
+* **`train.py`** — trains and saves the Logistic Regression model.
+* **`evaluate.py`** — calculates model evaluation metrics.
+* **`predict.py`** — loads the trained model and generates predictions for new data.
 
-\---
+---
 
-**## Key Learning Outcomes**
+## 🛠 Technologies
 
-This project demonstrates practical experience with:
+**Data Science & Machine Learning**
 
-\* Exploratory Data Analysis
+`Python` · `Pandas` · `NumPy` · `Scikit-learn` · `Matplotlib` · `Seaborn` · `Joblib`
 
-\* Data Cleaning
+**Frontend**
 
-\* Missing Value Handling
+`HTML` · `CSS` · `JavaScript`
 
-\* Feature Engineering
+**Development**
 
-\* Categorical Encoding
+`Jupyter Notebook` · `Git` · `GitHub`
 
-\* Binary Classification
+---
 
-\* Logistic Regression
+## ▶️ Running the Project
 
-\* Decision Trees
+Clone the repository:
 
-\* Random Forests
+```bash
+git clone https://github.com/alitokgoz7/Titanic-data-science.git
+cd Titanic-data-science
+```
 
-\* Cross-Validation
+Train the model:
 
-\* Hyperparameter Tuning
+```bash
+python src/train.py
+```
 
-\* Classification Metrics
+The trained model will be saved inside the `outputs` directory.
 
-\* ROC-AUC Evaluation
+To view the frontend, open:
 
-\* Overfitting Analysis
+```text
+index.html
+```
 
-\* Model Serialization
-
-\* Modular Python Project Structure
-
-\* End-to-End Machine Learning Workflows
-
-\---
-
-**## Future Improvements**
-
-Possible extensions include:
-
-\* Building preprocessing and modeling with Scikit-learn \`Pipeline\`
-
-\* Using \`ColumnTransformer\` for more robust preprocessing
-
-\* Preventing preprocessing information from being learned outside individual cross-validation folds
-
-\* Testing additional boosting algorithms
-
-\* Performing more extensive hyperparameter optimization
-
-\* Adding automated tests for preprocessing and feature engineering
-
-\* Adding experiment tracking
-
-\* Containerizing the project for reproducible deployment
-
-\---
-
-**## Author**
-
-Developed as an end-to-end data science and machine learning project using the Titanic dataset.
+in a web browser.

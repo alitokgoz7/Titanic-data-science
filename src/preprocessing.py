@@ -1,4 +1,5 @@
 import pandas as pd
+from features import create_features
 
 def load_data(filepath):
     return pd.read_csv(filepath)
@@ -15,6 +16,10 @@ def fill_missing_age_by_title(df):
             else x["Age"],
             axis = 1 
     )
+    return df
+
+def fill_missing_fare(df):
+    df["Fare"] = df["Fare"].fillna(df["Fare"].median())
     return df
 
 def encode_sex(df):
@@ -56,4 +61,10 @@ def preprocess_data(df):
     df=encode_title(df)
     df = drop_unnecessary_columns(df)
     return df
-   
+
+
+def prepare_data(df):
+    df = fill_missing_fare(df)
+    df= create_features(df)
+    df=preprocess_data(df)
+    return df
